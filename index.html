@@ -94,7 +94,7 @@ code{font-family:var(--f-mono);font-size:.85em}
 <div class="wrap">
   <header>
     <h1>Калькулятор Shield Chain</h1>
-    <p>Урон паладина на Arcadia Online. Итог за все 5 ударов, в скобках урон одного удара. Формула взята из таблицы Ver, случайная часть от щита восстановлена по замерам.</p>
+    <p>Урон паладина на Arcadia Online. Итог за все 5 ударов, в скобках урон одного удара.</p>
   </header>
 
   <div class="grid">
@@ -103,11 +103,11 @@ code{font-family:var(--f-mono);font-size:.85em}
         <h2>Паладин <small>статы с учётом всех бонусов</small></h2>
         <div class="body">
           <div class="fields">
-            <label for="str">STR<input id="str" type="number" min="1" max="300" value="119"></label>
-            <label for="dex">DEX<input id="dex" type="number" min="1" max="300" value="78"></label>
-            <label for="luk">LUK<input id="luk" type="number" min="1" max="300" value="2"></label>
+            <label for="str">STR<input id="str" type="number" min="1" max="300" value="120"></label>
+            <label for="dex">DEX<input id="dex" type="number" min="1" max="300" value="80"></label>
+            <label for="luk">LUK<input id="luk" type="number" min="1" max="300" value="1"></label>
           </div>
-          <p class="hint">Статусная атака: <b id="satk">—</b> <span id="strtip"></span></p>
+          <p class="hint">ATK от статов: <b id="satk">—</b> <span id="strtip"></span></p>
         </div>
       </section>
 
@@ -123,11 +123,8 @@ code{font-family:var(--f-mono);font-size:.85em}
           </div>
           <div class="presets"><span>Щит:</span>
             <button type="button" data-shield="250">Strong Shield · 250</button>
-            <button type="button" data-shield="130">Shield · 130</button>
-            <button type="button" data-shield="60">Buckler · 60</button>
-            <button type="button" data-shield="30">Guard · 30</button>
+            <button type="button" data-shield="130">Stone Buckler · 150</button>
           </div>
-          <p class="warn" id="wwarn" hidden>Случайная часть проверена на щитах весом 130 и 250. Для этого веса это грубая оценка.</p>
         </div>
       </section>
 
@@ -135,12 +132,12 @@ code{font-family:var(--f-mono);font-size:.85em}
         <h2>Карты и бонусы <small>в процентах</small></h2>
         <div class="body">
           <div class="fields">
-            <label for="race">Раса %<input id="race" type="number" min="0" max="500" value="40"></label>
-            <label for="ele">Элемент %<input id="ele" type="number" min="0" max="500" value="40"></label>
+            <label for="race">Раса %<input id="race" type="number" min="0" max="500" value="0"></label>
+            <label for="ele">Элемент %<input id="ele" type="number" min="0" max="500" value="0"></label>
             <label for="size">Размер %<input id="size" type="number" min="0" max="500" value="0"></label>
             <label for="other">Прочее %<input id="other" type="number" min="-100" max="500" value="0"></label>
           </div>
-          <p class="hint">Одна категория складывается (2 карты Anaconda = 40%), разные перемножаются. Множитель: <b id="mult">—</b></p>
+          <p class="hint">Одна категория складывается (2 карты расы = 40%), разные перемножаются. Множитель: <b id="mult">—</b></p>
         </div>
       </section>
 
@@ -148,12 +145,11 @@ code{font-family:var(--f-mono);font-size:.85em}
         <h2>Моб</h2>
         <div class="body">
           <div class="fields">
-            <label for="def">DEF<input id="def" type="number" min="0" max="99" value="28"></label>
-            <label for="vit">VIT<input id="vit" type="number" min="0" max="300" value="82"></label>
+            <label for="def">DEF<input id="def" type="number" min="0" max="99" value="0"></label>
+            <label for="vit">VIT<input id="vit" type="number" min="0" max="300" value="0"></label>
           </div>
           <div class="presets"><span>Пример:</span>
-            <button type="button" data-mob="28,82">Mobilus</button>
-            <button type="button" data-mob="15,29">Shugaring</button>
+            <button type="button" data-mob="30,44">Elder Spore</button>
           </div>
           <p class="hint">VIT DEF моба: <b id="vdef">—</b></p>
         </div>
@@ -176,10 +172,10 @@ code{font-family:var(--f-mono);font-size:.85em}
 
         <div class="tbl">
           <table>
-            <thead><tr><th>Часть</th><th>min</th><th>avg</th><th>max</th></tr></thead>
+            <thead><tr><th>Делали</th><th>min</th><th>avg</th><th>max</th></tr></thead>
             <tbody>
-              <tr class="base"><td>База</td><td id="b0"></td><td id="b1"></td><td id="b2"></td></tr>
-              <tr class="rand"><td>Случайная</td><td id="r0"></td><td id="r1"></td><td id="r2"></td></tr>
+              <tr class="base"><td>Базовая часть</td><td id="b0"></td><td id="b1"></td><td id="b2"></td></tr>
+              <tr class="rand"><td>Случайная часть</td><td id="r0"></td><td id="r1"></td><td id="r2"></td></tr>
               <tr class="tot"><td>Итого</td><td id="t0"></td><td id="t1"></td><td id="t2"></td></tr>
             </tbody>
           </table>
@@ -258,7 +254,6 @@ code{font-family:var(--f-mono);font-size:.85em}
     $("strtip").textContent=STR>=1?`· до порога STR ${nextT} не хватает ${nextT-STR} (даст +${nextT+(nextT/10)**2-(STR+Math.floor(STR/10)**2)} ATK)`:"";
     $("mult").textContent="×"+c.mult.toFixed(3).replace(/\.?0+$/,"");
     $("vdef").textContent=vdMin===vdMax?`${vdMin}`:`${vdMin}–${vdMax}`;
-    $("wwarn").hidden=(W>=100&&W<=300)||W===0;
 
     const st=t[1];
     const rows=[
