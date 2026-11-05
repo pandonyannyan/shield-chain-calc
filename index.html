@@ -72,11 +72,13 @@ tr.base td:first-child::before{background:var(--muted)}
 tr.rand td:first-child::before{background:var(--rand)}
 tr.tot td:first-child::before{background:var(--accent)}
 tr.tot td{background:var(--accent-soft);font-weight:600;border-bottom:none}
-.bar{height:12px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
-.bar i{position:absolute;top:0;bottom:0}
-.bar .b{background:var(--muted);opacity:.55;left:0}
+.bar{height:22px;border-radius:4px;background:var(--line);display:flex;overflow:hidden}
+.bar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-family:var(--f-mono);font-size:.75rem;font-weight:600;color:var(--panel);white-space:nowrap;overflow:hidden;min-width:0}
+.bar .b{background:var(--muted)}
 .bar .r{background:var(--rand)}
-.barlegend{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.barlegend{position:relative;height:1.3em;margin-top:3px;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.barlegend span{position:absolute;top:0;white-space:nowrap}
+#barTotLbl{right:0;color:var(--fg)}
 .steps{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:.85rem;margin:0}
 .steps dt{color:var(--muted)}
 .steps dd{margin:0;font-family:var(--f-mono);text-align:right;overflow-wrap:anywhere}
@@ -86,7 +88,7 @@ summary{cursor:pointer;font-size:.85rem;color:var(--muted)}
 .warn{font-size:.8rem;background:var(--rand-soft);color:var(--fg);border-radius:4px;padding:6px 9px;margin:0}
 .warn[hidden]{display:none}
 code{font-family:var(--f-mono);font-size:.85em}
-@media (prefers-reduced-motion:no-preference){.bar i{transition:left .2s,width .2s}}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .2s}}
 </style>
 </head>
 <body>
@@ -167,7 +169,7 @@ code{font-family:var(--f-mono);font-size:.85em}
 
         <div>
           <div class="bar" aria-hidden="true"><i class="b" id="barB"></i><i class="r" id="barR"></i></div>
-          <div class="barlegend"><span>0</span><span id="barMax">—</span></div>
+          <div class="barlegend"><span id="barBaseLbl">—</span><span id="barTotLbl">—</span></div>
         </div>
 
         <div class="tbl">
@@ -243,11 +245,16 @@ code{font-family:var(--f-mono);font-size:.85em}
     $("avgBig").innerHTML=`${fmt(t[1].tot)} <em>(${fmt(t[1].tot/5)} за удар)</em>`;
     $("rangeBig").textContent=`от ${fmt(t[0].tot)} до ${fmt(t[2].tot)}`;
 
-    const mx=t[2].tot||1;
-    $("barB").style.width=(b[1].tot/mx*100)+"%";
-    $("barR").style.left=(t[0].tot/mx*100)+"%";
-    $("barR").style.width=((t[2].tot-t[0].tot)/mx*100)+"%";
-    $("barMax").textContent=fmt(mx);
+    const tot=t[1].tot||1, bp=b[1].tot/tot*100, rp=100-bp;
+    $("barB").style.width=bp+"%";
+    $("barR").style.width=rp+"%";
+    $("barB").textContent=bp>=12?Math.round(bp)+"%":"";
+    $("barR").textContent=rp>=12?Math.round(rp)+"%":"";
+    const bl=$("barBaseLbl");
+    bl.textContent=fmt(b[1].tot);
+    bl.style.left=bp+"%";
+    bl.style.transform=rp<25?"translateX(-100%)":(bp<15?"none":"translateX(-50%)");
+    $("barTotLbl").textContent=fmt(tot);
 
     $("satk").textContent=satk;
     const nextT=(Math.floor(STR/10)+1)*10;
