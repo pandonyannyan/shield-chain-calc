@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Калькулятор Shield Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jura:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: RO-style game window — form panels on the left, sticky results window on the right; stacks on phones */
+:root{
+  --bg:#e9edf5; --panel:#fbfcfe; --frame:#b9c4da; --head:#4d6496; --head-fg:#f4f7ff;
+  --fg:#1d2433; --muted:#5d6880; --accent:#c9781a; --accent-soft:#fbefdc; --rand:#3f7fb5; --rand-soft:#e3eef8;
+  --line:#d6dceb; --input:#ffffff;
+  --f-display:"Jura","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121725; --panel:#1a2133; --frame:#2f3a55; --head:#2c3d66; --head-fg:#e7ecfa;
+  --fg:#e3e8f4; --muted:#97a2bb; --accent:#f0a447; --accent-soft:#3a2c17; --rand:#79b3e6; --rand-soft:#1b2c40;
+  --line:#2a3450; --input:#121827; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121725; --panel:#1a2133; --frame:#2f3a55; --head:#2c3d66; --head-fg:#e7ecfa;
+  --fg:#e3e8f4; --muted:#97a2bb; --accent:#f0a447; --accent-soft:#3a2c17; --rand:#79b3e6; --rand-soft:#1b2c40;
+  --line:#2a3450; --input:#121827; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:1.9rem;margin:0;letter-spacing:.01em;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:68ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.win{background:var(--panel);border:1px solid var(--frame);border-radius:6px;overflow:hidden}
+.win>h2{margin:0;background:var(--head);color:var(--head-fg);font-family:var(--f-display);font-weight:700;font-size:.95rem;
+  letter-spacing:.06em;text-transform:uppercase;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.win>h2 small{font-family:var(--f-body);font-weight:400;text-transform:none;letter-spacing:0;opacity:.8;font-size:.8rem}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.forms{display:flex;flex-direction:column;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 12px}
+label{display:flex;flex-direction:column;gap:3px;font-size:.82rem;color:var(--muted)}
+input,select{font:inherit;font-family:var(--f-mono);font-size:.95rem;color:var(--fg);background:var(--input);border:1px solid var(--frame);
+  border-radius:4px;padding:6px 8px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.hint b{color:var(--fg);font-weight:600;font-family:var(--f-mono)}
+.presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.presets span{font-size:.8rem;color:var(--muted)}
+button{font:inherit;font-size:.82rem;background:transparent;color:var(--head);border:1px solid var(--frame);border-radius:999px;padding:3px 10px;cursor:pointer}
+:root[data-theme="dark"] button{color:var(--fg)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button{color:var(--fg)}}
+button:hover{border-color:var(--accent)}
+.results{position:sticky;top:max(12px,env(safe-area-inset-top,0px))}
+@media (max-width:860px){.results{position:static}}
+.big{display:flex;flex-direction:column;gap:2px;padding:4px 2px 2px}
+.big .lbl{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.big .num{font-family:var(--f-display);font-weight:700;font-size:2.4rem;color:var(--accent);line-height:1.05;font-variant-numeric:tabular-nums}
+.big .num em{font-style:normal;font-size:1.1rem;color:var(--muted);font-weight:500}
+.big .range{font-family:var(--f-mono);font-size:.9rem;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--f-mono);font-size:.92rem}
+td small{color:var(--muted);font-size:.8rem}
+td:first-child{font-family:var(--f-body);font-weight:600;font-size:.88rem}
+tr.base td:first-child::before,tr.rand td:first-child::before,tr.tot td:first-child::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:0}
+tr.base td:first-child::before{background:var(--muted)}
+tr.rand td:first-child::before{background:var(--rand)}
+tr.tot td:first-child::before{background:var(--accent)}
+tr.tot td{background:var(--accent-soft);font-weight:600;border-bottom:none}
+.bar{height:12px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0}
+.bar .b{background:var(--muted);opacity:.55;left:0}
+.bar .r{background:var(--rand)}
+.barlegend{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.steps{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:.85rem;margin:0}
+.steps dt{color:var(--muted)}
+.steps dd{margin:0;font-family:var(--f-mono);text-align:right;overflow-wrap:anywhere}
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-size:.85rem;color:var(--muted)}
+.note{font-size:.8rem;color:var(--muted);margin:0;max-width:70ch}
+.warn{font-size:.8rem;background:var(--rand-soft);color:var(--fg);border-radius:4px;padding:6px 9px;margin:0}
+.warn[hidden]{display:none}
+code{font-family:var(--f-mono);font-size:.85em}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:left .2s,width .2s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Калькулятор Shield Chain</h1>
+    <p>Урон паладина на Arcadia Online. Итог за все 5 ударов, в скобках урон одного удара. Формула взята из таблицы Ver, случайная часть от щита восстановлена по замерам.</p>
+  </header>
+
+  <div class="grid">
+    <div class="forms">
+      <section class="win">
+        <h2>Паладин <small>статы с учётом всех бонусов</small></h2>
+        <div class="body">
+          <div class="fields">
+            <label for="str">STR<input id="str" type="number" min="1" max="300" value="119"></label>
+            <label for="dex">DEX<input id="dex" type="number" min="1" max="300" value="78"></label>
+            <label for="luk">LUK<input id="luk" type="number" min="1" max="300" value="2"></label>
+          </div>
+          <p class="hint">Статусная атака: <b id="satk">—</b> <span id="strtip"></span></p>
+        </div>
+      </section>
+
+      <section class="win">
+        <h2>Щит и скилл</h2>
+        <div class="body">
+          <div class="fields">
+            <label for="weight">Вес щита<input id="weight" type="number" min="0" max="1000" value="250"></label>
+            <label for="refine">Заточка щита<input id="refine" type="number" min="0" max="20" value="4"></label>
+            <label for="lv">Уровень Shield Chain
+              <select id="lv"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></label>
+            <label for="pt">Power Thrust<select id="pt"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          </div>
+          <div class="presets"><span>Щит:</span>
+            <button type="button" data-shield="250">Strong Shield · 250</button>
+            <button type="button" data-shield="130">Shield · 130</button>
+            <button type="button" data-shield="60">Buckler · 60</button>
+            <button type="button" data-shield="30">Guard · 30</button>
+          </div>
+          <p class="warn" id="wwarn" hidden>Случайная часть проверена на щитах весом 130 и 250. Для этого веса это грубая оценка.</p>
+        </div>
+      </section>
+
+      <section class="win">
+        <h2>Карты и бонусы <small>в процентах</small></h2>
+        <div class="body">
+          <div class="fields">
+            <label for="race">Раса %<input id="race" type="number" min="0" max="500" value="40"></label>
+            <label for="ele">Элемент %<input id="ele" type="number" min="0" max="500" value="40"></label>
+            <label for="size">Размер %<input id="size" type="number" min="0" max="500" value="0"></label>
+            <label for="other">Прочее %<input id="other" type="number" min="-100" max="500" value="0"></label>
+          </div>
+          <p class="hint">Одна категория складывается (2 карты Anaconda = 40%), разные перемножаются. Множитель: <b id="mult">—</b></p>
+        </div>
+      </section>
+
+      <section class="win">
+        <h2>Моб</h2>
+        <div class="body">
+          <div class="fields">
+            <label for="def">DEF<input id="def" type="number" min="0" max="99" value="28"></label>
+            <label for="vit">VIT<input id="vit" type="number" min="0" max="300" value="82"></label>
+          </div>
+          <div class="presets"><span>Пример:</span>
+            <button type="button" data-mob="28,82">Mobilus</button>
+            <button type="button" data-mob="15,29">Shugaring</button>
+          </div>
+          <p class="hint">VIT DEF моба: <b id="vdef">—</b></p>
+        </div>
+      </section>
+    </div>
+
+    <section class="win results" aria-live="polite">
+      <h2>Урон</h2>
+      <div class="body">
+        <div class="big">
+          <span class="lbl">Средний урон</span>
+          <span class="num" id="avgBig">—</span>
+          <span class="range" id="rangeBig">—</span>
+        </div>
+
+        <div>
+          <div class="bar" aria-hidden="true"><i class="b" id="barB"></i><i class="r" id="barR"></i></div>
+          <div class="barlegend"><span>0</span><span id="barMax">—</span></div>
+        </div>
+
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Часть</th><th>min</th><th>avg</th><th>max</th></tr></thead>
+            <tbody>
+              <tr class="base"><td>База</td><td id="b0"></td><td id="b1"></td><td id="b2"></td></tr>
+              <tr class="rand"><td>Случайная</td><td id="r0"></td><td id="r1"></td><td id="r2"></td></tr>
+              <tr class="tot"><td>Итого</td><td id="t0"></td><td id="t1"></td><td id="t2"></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details open>
+          <summary>Расчёт по шагам (средний случай)</summary>
+          <dl class="steps" id="steps"></dl>
+        </details>
+
+        <details>
+          <summary>Формула и точность</summary>
+          <div class="body" style="padding:8px 0 0">
+            <p class="note"><code>ATK = вес + STR + 4×заточка + ⌊DEX/5⌋ + ⌊LUK/5⌋ + ⌊STR/10⌋² + R</code><br>
+            <code>⌊ATK × (SkillRatio + 0.05×PT)⌋ → ×(1 − DEF%) − VIT DEF → × карты → округление до кратного 5 → /5</code></p>
+            <p class="note">Атака и заточка оружия в формулу не входят. SkillRatio: 12.5 на 5 уровне (из таблицы), 8.9 на 1 уровне (по замерам), 2–4 уровни промежуточные (оценка: 8 + 0.9×ур.).</p>
+            <p class="note">R — случайная добавка от щита: от ~40 до ~2.32×вес + 135, в среднем ~1.69×вес. Подобрана по ~250 ударам на щитах 130 и 250. Минимум у VIT DEF моба считается от максимальной защиты, максимум от минимальной.</p>
+            <p class="note">Проверка: Mobilus, Strong Shield +4, STR 119 — модель даёт 1 940–4 328 за удар, замер 2 011–4 346.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ids=["str","dex","luk","weight","refine","lv","pt","race","ele","size","other","def","vit"];
+  const $=id=>document.getElementById(id);
+  const KEY="sc-calc-v1";
+  try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s)ids.forEach(k=>{if(s[k]!=null)$(k).value=s[k]});}catch(e){}
+
+  const num=(id)=>{const v=parseFloat($(id).value);return isFinite(v)?v:0};
+  const fmt=n=>Math.round(n).toLocaleString("ru-RU");
+  const pair=t=>`${fmt(t)} <small>(${fmt(t/5)})</small>`;
+
+  function ratio(lv){return lv>=5?12.5:8+0.9*lv}
+
+  function dmg(A,vd,c){
+    const sm=Math.floor(A*(ratio(c.lv)+0.05*c.pt));
+    let ad=Math.floor(sm*(1-c.def/100))-vd;
+    if(ad<0)ad=0;
+    const cr=Math.floor(ad*c.mult);
+    let tot=5*Math.floor(cr/5);
+    if(tot<5)tot=5; // минимум 1 урона за удар
+    return {sm,ad,cr,tot};
+  }
+
+  function calc(){
+    const STR=num("str"),DEX=num("dex"),LUK=num("luk"),W=Math.max(0,num("weight")),RF=Math.max(0,num("refine"));
+    const c={lv:parseInt($("lv").value,10),pt:parseInt($("pt").value,10),def:Math.min(99,Math.max(0,num("def")))};
+    const VIT=Math.max(0,num("vit"));
+    c.mult=(1+num("race")/100)*(1+num("ele")/100)*(1+num("size")/100)*(1+num("other")/100);
+
+    const satk=STR+Math.floor(DEX/5)+Math.floor(LUK/5)+Math.floor(STR/10)**2;
+    const A0=satk+W+4*RF;
+    const vdMin=VIT, vdMax=VIT+Math.max(Math.floor(VIT/20)**2-1,0), vdAvg=(vdMin+vdMax)/2;
+    const Rmin=W>0?40:0, Rmax=W>0?2.32*W+135:0, Ravg=W>0?Math.max(1.69*W-5,Rmin):0;
+
+    const b=[dmg(A0,vdMax,c),dmg(A0,vdAvg,c),dmg(A0,vdMin,c)];
+    const t=[dmg(A0+Rmin,vdMax,c),dmg(A0+Ravg,vdAvg,c),dmg(A0+Rmax,vdMin,c)];
+    const r=t.map((x,i)=>x.tot-b[i].tot);
+
+    for(let i=0;i<3;i++){$("b"+i).innerHTML=pair(b[i].tot);$("r"+i).innerHTML=pair(r[i]);$("t"+i).innerHTML=pair(t[i].tot);}
+    $("avgBig").innerHTML=`${fmt(t[1].tot)} <em>(${fmt(t[1].tot/5)} за удар)</em>`;
+    $("rangeBig").textContent=`от ${fmt(t[0].tot)} до ${fmt(t[2].tot)}`;
+
+    const mx=t[2].tot||1;
+    $("barB").style.width=(b[1].tot/mx*100)+"%";
+    $("barR").style.left=(t[0].tot/mx*100)+"%";
+    $("barR").style.width=((t[2].tot-t[0].tot)/mx*100)+"%";
+    $("barMax").textContent=fmt(mx);
+
+    $("satk").textContent=satk;
+    const nextT=(Math.floor(STR/10)+1)*10;
+    $("strtip").textContent=STR>=1?`· до порога STR ${nextT} не хватает ${nextT-STR} (даст +${nextT+(nextT/10)**2-(STR+Math.floor(STR/10)**2)} ATK)`:"";
+    $("mult").textContent="×"+c.mult.toFixed(3).replace(/\.?0+$/,"");
+    $("vdef").textContent=vdMin===vdMax?`${vdMin}`:`${vdMin}–${vdMax}`;
+    $("wwarn").hidden=(W>=100&&W<=300)||W===0;
+
+    const st=t[1];
+    const rows=[
+      ["Статусная атака",satk],["Щит: вес + 4×заточка",`${W} + ${4*RF}`],["Случайная добавка R (средн.)",`+${fmt(Ravg)}`],
+      ["ATK",fmt(A0+Ravg)],[`× SkillRatio ${(ratio(c.lv)+0.05*c.pt).toFixed(2)}`,fmt(st.sm)],
+      [`× (1 − ${c.def}%) − VIT DEF ${vdAvg}`,fmt(st.ad)],[`× карты ${c.mult.toFixed(3)}`,fmt(st.cr)],
+      ["Округление до 5",fmt(st.tot)],["Один удар",fmt(st.tot/5)]
+    ];
+    $("steps").innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+    try{const s={};ids.forEach(k=>s[k]=$(k).value);localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}
+  }
+
+  ids.forEach(k=>$(k).addEventListener("input",calc));
+  document.querySelectorAll("[data-shield]").forEach(bn=>bn.addEventListener("click",()=>{$("weight").value=bn.dataset.shield;calc();}));
+  document.querySelectorAll("[data-mob]").forEach(bn=>bn.addEventListener("click",()=>{const [d,v]=bn.dataset.mob.split(",");$("def").value=d;$("vit").value=v;calc();}));
+  calc();
+})();
+</script>
+</body>
+</html>
